@@ -11,6 +11,7 @@ import time
 # from machine import RTC
 import json
 import sys
+import os
 
 # from flask import Flask, render_template
 
@@ -98,78 +99,6 @@ class izakaya:
             for line in f:
                 html = html + line
 
-        HTML = """<!DOCTYPE html>
-        <html lang="ja">
-        <head>
-            <meta charset="UTF-8">
-            <title>注文ページ</title>
-            <style>
-                /* スタイルの追加 */
-                body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    background-color: #f4f4f4;
-                }
-                .container {
-                    max-width: 800px;
-                    margin: 20px auto;
-                    padding: 20px;
-                    background-color: #fff;
-                    border-radius: 8px;
-                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                }
-                .menu-item {
-                    margin-bottom: 20px;
-                    text-align: center;
-                }
-                .menu-item img {
-                    max-width: 100%;
-                    border-radius: 8px;
-                }
-                .btn {
-                    display: inline-block;
-                    padding: 10px 20px;
-                    background-color: #007bff;
-                    color: #fff;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    transition: background-color 0.3s ease;
-                    margin: 5px;
-                }
-                .btn:hover {
-                    background-color: #0056b3;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="menu-item">
-                    <img src="menu_image1.jpg" alt="メニュー写真1">
-                    <div>
-                        <button class="btn order-btn">注文する</button>
-                        <button class="btn checkout-btn">会計する</button>
-                    </div>
-                </div>
-                <div class="menu-item">
-                    <img src="menu_image2.jpg" alt="メニュー写真2">
-                    <div>
-                        <button class="btn order-btn">注文する</button>
-                        <button class="btn checkout-btn">会計する</button>
-                    </div>
-                </div>
-                <div class="menu-item">
-                    <img src="menu_image3.jpg" alt="メニュー写真3">
-                    <div>
-                        <button class="btn order-btn">注文する</button>
-                        <button class="btn checkout-btn">会計する</button>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
         self.html = html
 
 
@@ -227,6 +156,15 @@ class izakaya:
     def main_loop(self):
         # 以下ループ処理
         # 変数M1,M2,M3を更新したWebページを作成する（もっと頻度を落としてもいいかも）
+        
+        # HTTPレスポンスのフォーマット
+        RESPONSE = """HTTP/1.1 200 OK
+        Content-Length: %d
+        Content-Type: %s
+
+        """
+        response_headers = "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: %s\r\n\r\n"
+        
         while True:
             try:
                 if "MicroPython" in sys.version:
@@ -244,10 +182,46 @@ class izakaya:
                 
                 # %以下の変数がhtml内部に代入される
 #                 print(now, self.temperature, self.M1, self.M2, self.M3)
-                response = self.html
+#                 response = self.html
         #         if not "MicroPython" in sys.version:
 #                 response = self.head + response
-                cl.sendall(response.encode('utf-8'))        
+#                 cl.sendall(response.encode('utf-8'))
+
+                # HTTPリクエストがGETであり、リクエストされたファイルがHTMLファイルである場合
+                if request.startswith(b"GET / ") or request.startswith(b"GET /index.html "):
+#                     response = HTML_CONTENT.encode("utf-8")
+                    html_e = self.html.encode()
+                    response = response_headers % (len(html_e), "text/html")
+#                     print(self.html)
+                    cl.send(response)
+                    cl.send(html_e)
+#                     cl.send(response_headers)
+
+                # リクエストされたファイルが画像ファイルである場合
+                elif request.startswith(b"GET /menu_image1.jpg "):
+
+                    with open("menu_image1.jpg", "rb") as f:
+#                         image_data = f.read()
+#                     print(image_data)    
+#                     response_headers = RESPONSE % (len(image_data), "image/jpeg", image_data)
+#                         print(os.stat(f)[6])
+                        response = response_headers % (os.stat("menu_image1.jpg")[6], "image/jpeg")
+                        cl.send(response.encode())                    
+                        # チャンクサイズ
+                        CHUNK_SIZE = 1024
+
+                        # 画像ファイルの送信
+                        while True:
+                            chunk = f.read(CHUNK_SIZE)
+                            if chunk:
+                                print(chunk)
+                                cl.send(chunk)
+                            else:
+                                break
+    #                     cl.send(RESPONSE % (len(image_data), "image/jpeg", image_data))
+                elif request.startswith(b"GET /order"):
+                    print("注文ボタンがクリックされました！")
+        # ここにボタンがクリックされたときの処理を追加する
                 # cl.send(response)
 # #                 # 1秒ごとにページを作成しなおす
                 time.sleep(1)

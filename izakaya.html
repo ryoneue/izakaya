@@ -49,21 +49,21 @@
             <img src="menu_image1.jpg" alt="1">
             <div>
                 <button class="btn order-btn" onclick="confirmOrder()">注文する</button>
-                <button class="btn checkout-btn">会計する</button>
+                <!-- <button class="btn checkout-btn">会計する</button> -->
             </div>
         </div>
         <div class="menu-item">
             <img src="menu_image2.jpg" alt="">
             <div>
                 <button class="btn order-btn">注文する</button>
-                <button class="btn checkout-btn">会計する</button>
+                <!-- <button class="btn checkout-btn">会計する</button> -->
             </div>
         </div>
         <div class="menu-item">
             <img src="menu_image3.jpg" alt="">
             <div>
                 <button class="btn order-btn">注文する</button>
-                <button class="btn checkout-btn">会計する</button>
+                <!-- <button class="btn checkout-btn">会計する</button> -->
             </div>
         </div>
     </div>
@@ -72,11 +72,30 @@
         
             var confirmed = confirm("本当に注文しますか？");
             if (confirmed) {
+                sendRequest()
                 var a = 1;
             } 
             else {
                 var a = 2;
             }
+        }
+        function increaseNumber(buttonNumber) {
+            // 対応する数字要素のIDを取得
+            var numberId = "number" + buttonNumber;
+
+            // 数字を取得して増加させる
+            var numberElement = document.getElementById(numberId);
+            var currentNumber = parseInt(numberElement.innerHTML);
+            var newNumber = currentNumber + 1;
+
+            // 数字を更新
+            numberElement.innerHTML = newNumber;
+        }
+        function sendRequest() {
+            // XMLHttpRequestを使用してサーバーにリクエストを送信する
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://100.64.1.75/order", true);
+            xhr.send();
         }
     </script>
 </body>
