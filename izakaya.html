@@ -46,30 +46,20 @@
 <body>
     <div class="container">
         <div class="menu-item">
-            <img src="menu_image1.jpg" alt="1">
-            <div>
-                <button class="btn order-btn" onclick="confirmOrder(order_number=1)">注文する</button>
-                <!-- <button class="btn checkout-btn">会計する</button> -->
-            </div>
-        </div>
-        <div class="menu-item">
-            <img src="menu_image2.jpg" alt="">
-            <div>
-                <button class="btn order-btn">注文する</button>
-                <!-- <button class="btn checkout-btn">会計する</button> -->
-            </div>
-        </div>
-        <div class="menu-item">
-            <img src="menu_image3.jpg" alt="">
-            <div>
-                <button class="btn order-btn">注文する</button>
-                <!-- <button class="btn checkout-btn">会計する</button> -->
-            </div>
-        </div>
+         <!-- page.py内で追加される -->
+
+                        <div>
+                            <button class="btn order-btn" onclick="confirmOrder(order_number=-1)">会計する</button>
+                            <!-- <button class="btn checkout-btn">会計する</button> -->
+                        </div>  
     </div>
     <script>
         function confirmOrder(order_number) {
         
+            if (order_number == -1) {
+                sendRequest(-1)
+                return
+            }
             var confirmed = confirm("本当に注文しますか？");
             if (confirmed) {
                 sendRequest(order_number)

@@ -1,0 +1,5 @@
+ryosuke pub recipt
+potate ,300
+burger (cheese) ,600
+salada ,400
+burge ,500

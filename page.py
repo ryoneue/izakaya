@@ -43,6 +43,7 @@ class izakaya:
         else:
             self.debug = False
 
+        self.init_total(path="./total.txt")
         self.head = """HTTP/1.1 200 OK Content-Type: text/html
 
 """
@@ -82,9 +83,16 @@ class izakaya:
         # else:
             # date = datetime.now()
         # self.date = date
-
-
-
+    def add_menu(self, num):
+        html = """
+                        <img src="menu_image%d.jpg" alt="%d">
+                        <div>
+                            <button class="btn order-btn" onclick="confirmOrder(order_number=%d)">注文する</button>
+                            <!-- <button class="btn checkout-btn">会計する</button> -->
+                        </div>        
+                        """
+        add_html = html % (num, num, num)
+        return add_html
 
 
     def load_html(self):
@@ -96,7 +104,14 @@ class izakaya:
 
         html = ""
         with open(file, encoding='utf-8') as f:
+                
             for line in f:
+                if '<div class="menu-item">' in line:
+
+                    for i in range(len(self.menu_table)):
+                        line += self.add_menu(i)
+                        
+                a = 1
                 html = html + line
 
         self.html = html
@@ -151,8 +166,36 @@ class izakaya:
 #             tmp = f.readlines()
 #         self.M1, self.M2, self.M3 = [i.replace("\n", "") for i in tmp]
 
+    def load_table(self,table_path):
+        with open(table_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        print(data)
+        print(len(data))
+        self.menu_table = data
 
+    def add_total(self, name, value, path="./total.txt"):
+        s = "\n" + name + " :" + str(value)
+        with open('./total.txt', mode='a') as f:
+            f.write(s)
 
+    def init_total(self,path="./total.txt"):
+        s = "ryosuke pub recipt"
+        with open('./total.txt', mode='w') as f:
+            f.write(s)
+            pass
+        
+    def calc_total(self, path="./total.txt"):
+        with open("./total.txt", "r") as f:
+            data = f.readlines()
+        
+        print(data)
+        all = 0
+        for num,i in enumerate(data):
+            if num == 0:
+                continue
+            all += int(i.split(":")[1])
+        print(all)    
+            
     def main_loop(self):
         # 以下ループ処理
         # 変数M1,M2,M3を更新したWebページを作成する（もっと頻度を落としてもいいかも）
@@ -222,7 +265,17 @@ class izakaya:
                 elif request.startswith(b"GET /order"):
                     print("注文ボタンがクリックされました！")
                     print(request.split("GET")[1].split("HTTP/1.1")[0])
-        # ここにボタンがクリックされたときの処理を追加する
+                                      
+                    menu_number = request.split("GET")[1].split("HTTP/1.1")[0].split("_")[1]
+                    print(menu_number)
+                    if int(menu_number) == -1:
+                        print("check total amount")
+                        self.calc_total()
+                    else:                        
+                        print(self.menu_table[int(menu_number)])
+                        table = self.menu_table[int(menu_number)]
+                        self.add_total(name=table["name"], value=table["value"])
+                    
                 # cl.send(response)
 # #                 # 1秒ごとにページを作成しなおす
                 time.sleep(1)
@@ -239,6 +292,7 @@ func = izakaya()
 
 # func.set_wifi_info(json_file="info.json")
 func.load_json(json_file="info.json")
+func.load_table("./menu_table.json")
 func.load_html()
 func.open_socket()
 func.setting()
