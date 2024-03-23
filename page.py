@@ -214,13 +214,14 @@ class izakaya:
                         while True:
                             chunk = f.read(CHUNK_SIZE)
                             if chunk:
-                                print(chunk)
+#                                 print(chunk)
                                 cl.send(chunk)
                             else:
                                 break
     #                     cl.send(RESPONSE % (len(image_data), "image/jpeg", image_data))
                 elif request.startswith(b"GET /order"):
                     print("注文ボタンがクリックされました！")
+                    print(request.split("GET")[1].split("HTTP/1.1")[0])
         # ここにボタンがクリックされたときの処理を追加する
                 # cl.send(response)
 # #                 # 1秒ごとにページを作成しなおす

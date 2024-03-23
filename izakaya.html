@@ -48,7 +48,7 @@
         <div class="menu-item">
             <img src="menu_image1.jpg" alt="1">
             <div>
-                <button class="btn order-btn" onclick="confirmOrder()">注文する</button>
+                <button class="btn order-btn" onclick="confirmOrder(order_number=1)">注文する</button>
                 <!-- <button class="btn checkout-btn">会計する</button> -->
             </div>
         </div>
@@ -68,11 +68,11 @@
         </div>
     </div>
     <script>
-        function confirmOrder() {
+        function confirmOrder(order_number) {
         
             var confirmed = confirm("本当に注文しますか？");
             if (confirmed) {
-                sendRequest()
+                sendRequest(order_number)
                 var a = 1;
             } 
             else {
@@ -91,10 +91,10 @@
             // 数字を更新
             numberElement.innerHTML = newNumber;
         }
-        function sendRequest() {
+        function sendRequest(order_number) {
             // XMLHttpRequestを使用してサーバーにリクエストを送信する
             var xhr = new XMLHttpRequest();
-            xhr.open("GET", "http://100.64.1.75/order", true);
+            xhr.open("GET", "http://100.64.1.75/order_"+order_number, true);
             xhr.send();
         }
     </script>
