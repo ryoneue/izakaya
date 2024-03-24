@@ -12,6 +12,9 @@ import time
 import json
 import sys
 import os
+import uos
+
+
 
 # from flask import Flask, render_template
 
@@ -31,6 +34,14 @@ else:
     from http.server import HTTPServer, SimpleHTTPRequestHandler
     import argparse
 
+def file_exists(file_path):
+    try:
+        # ファイルの情報を取得し、存在を確認する
+        uos.stat(file_path)
+        return True
+    except OSError:
+        # ファイルが存在しない場合はFalseを返す
+        return False
 
 class izakaya:
     def __init__(self):
@@ -83,15 +94,19 @@ class izakaya:
         # else:
             # date = datetime.now()
         # self.date = date
-    def add_menu(self, num):
+    def add_menu(self, name,num):
         html = """
-                        <img src="menu_image%d.jpg" alt="%d">
-                        <div>
+                            <h3>%s</h3>
                             <button class="btn order-btn" onclick="confirmOrder(order_number=%d)">注文する</button>
-                            <!-- <button class="btn checkout-btn">会計する</button> -->
                         </div>        
                         """
-        add_html = html % (num, num, num)
+        if file_exists("./menu_image"+str(num)+".jpg"):
+            html = """<div>
+                        <img src="menu_image%d.jpg" alt="%d">""" % (num, num)  + html
+        else:
+            html = """<div>
+                        """ + html
+        add_html = html % (name, num)
         return add_html
 
 
@@ -109,7 +124,8 @@ class izakaya:
                 if '<div class="menu-item">' in line:
 
                     for i in range(len(self.menu_table)):
-                        line += self.add_menu(i)
+                        name = self.menu_table[i]["name"]
+                        line += self.add_menu(name,i)
                         
                 a = 1
                 html = html + line
@@ -146,9 +162,9 @@ class izakaya:
     def setting_line(self):
         # 通知用Line設定
         
-        tl = tiny_line(self.access_token, debug=True)
+        self.tl = tiny_line(self.access_token, debug=True)
         print('listening on', self.addr)
-        tl.notify("http://"+self.status[0])
+        self.tl.notify("http://"+self.status[0])
 
     def detect_count(self):
         """
@@ -193,8 +209,89 @@ class izakaya:
         for num,i in enumerate(data):
             if num == 0:
                 continue
-            all += int(i.split(":")[1])
-        print(all)    
+            all += float(i.split(":")[1])
+        print(all)
+        return all
+        
+    def make_recipt(self):
+        # 商品名と値段を読み込む
+        products = []
+        with open('./total.txt', 'r', encoding='utf-8') as file:
+            for line in file:
+                print(line)
+                if 'ryosuke' in line:
+                    continue
+                name, price = line.strip().split(' :')
+                print(name, price)
+                products.append({'name': name, 'price': float(price)})
+
+        # HTMLを生成する
+        html = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Receipt</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }
+                .receipt {
+                    border: 1px solid #ccc;
+                    padding: 20px;
+                    max-width: 400px;
+                    margin: 0 auto;
+                }
+                .item {
+                    margin-bottom: 10px;
+                }
+                .item span {
+                    float: left;
+                }
+                .price {
+                    float: right;
+                }
+                .total {
+                    font-weight: bold;
+                    margin-top: 10px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt">
+                <h2>Ryosuke's Holidays Pub </h2>
+                <h3>Recipt</h3>
+                <div class="items">
+        """
+
+        for product in products:
+            html += f"""
+                    <div class="item">
+                        <span>{product['name']}:</span>
+                        <span class="price">GBP{product['price']:,.2f}</span>
+                        
+                    </div><br>
+            """
+
+        html += """
+                    <div class="item">
+                        <span>Service Charge:</span>
+                        <span class="price">GBP%.2f</span>
+                    </div><br>  
+                    <div class="item">
+                        <span>Total:</span>
+                        <span class="price">GBP%.2f</span>
+                    </div><br>
+                    <h3>Thank YOU!!! <3</h3>
+                    <img src="mochi.jpg" alt="0">
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return html
             
     def main_loop(self):
         # 以下ループ処理
@@ -207,7 +304,8 @@ class izakaya:
 
         """
         response_headers = "HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: %s\r\n\r\n"
-        
+        menu_number_old = ""
+        result = False
         while True:
             try:
                 if "MicroPython" in sys.version:
@@ -238,23 +336,33 @@ class izakaya:
 #                     print(self.html)
                     cl.send(response)
                     cl.send(html_e)
+                    menu_number_old = ""
+                    if result:
+                        time.sleep(5)
+                        self.init_total()
+                        self.load_html()
 #                     cl.send(response_headers)
 
                 # リクエストされたファイルが画像ファイルである場合
-                elif request.startswith(b"GET /menu_image1.jpg "):
-
-                    with open("menu_image1.jpg", "rb") as f:
+                elif request.startswith(b"GET /menu_image"):
+                    menu_number = request.split("GET")[1].split("HTTP/1.1")[0].split("image")[1][:-5]
+                    print(menu_number)
+                    print("./menu_image"+str(menu_number)+".jpg")
+                    print(file_exists("./menu_image"+str(menu_number)+".jpg"))
+                    with open("./menu_image"+str(menu_number)+".jpg", "rb") as f:
 #                         image_data = f.read()
 #                     print(image_data)    
 #                     response_headers = RESPONSE % (len(image_data), "image/jpeg", image_data)
 #                         print(os.stat(f)[6])
-                        response = response_headers % (os.stat("menu_image1.jpg")[6], "image/jpeg")
+                        response = response_headers % (os.stat("./menu_image"+str(menu_number)+".jpg")[6], "image/jpeg")
+                        print(response)
                         cl.send(response.encode())                    
                         # チャンクサイズ
                         CHUNK_SIZE = 1024
 
                         # 画像ファイルの送信
                         while True:
+                            time.sleep(0.01)
                             chunk = f.read(CHUNK_SIZE)
                             if chunk:
 #                                 print(chunk)
@@ -262,23 +370,66 @@ class izakaya:
                             else:
                                 break
     #                     cl.send(RESPONSE % (len(image_data), "image/jpeg", image_data))
+                elif request.startswith(b"GET /mochi.jpg "):
+                    with open("mochi2.jpg", "rb") as f:
+                        response = response_headers % (os.stat("mochi2.jpg")[6], "image/jpeg")
+                        cl.send(response.encode())                    
+                        # チャンクサイズ
+                        CHUNK_SIZE = 1024
+
+                        # 画像ファイルの送信
+                        while True:
+                            time.sleep(0.01)
+                            chunk = f.read(CHUNK_SIZE)
+                            if chunk:
+                                cl.send(chunk)
+                            else:
+                                break
+                elif request.startswith(b"GET /purin.jpg "):
+                    with open("purin.jpg", "rb") as f:
+                        response = response_headers % (os.stat("purin.jpg")[6], "image/jpeg")
+                        cl.send(response.encode())                    
+                        # チャンクサイズ
+                        CHUNK_SIZE = 1024
+                        # 画像ファイルの送信
+                        while True:
+                            time.sleep(0.01)
+                            chunk = f.read(CHUNK_SIZE)
+                            if chunk:
+                                cl.send(chunk)
+                            else:
+                                break                             
                 elif request.startswith(b"GET /order"):
                     print("注文ボタンがクリックされました！")
+                    
                     print(request.split("GET")[1].split("HTTP/1.1")[0])
                                       
                     menu_number = request.split("GET")[1].split("HTTP/1.1")[0].split("_")[1]
                     print(menu_number)
+                    if menu_number == menu_number_old:
+                        continue
+
                     if int(menu_number) == -1:
+                        self.tl.notify("チェック")
                         print("check total amount")
-                        self.calc_total()
-                    else:                        
+                        total = self.calc_total()
+                        self.html = self.make_recipt() % (total*0.3, total*1.3)
+                        result = True
+#                         html_e = recipt_html.encode()
+#                         response = response_headers % (len(html_e), "text/html")
+#                         cl.send(response)
+#                         cl.send(html_e)
+                    else:
+                        self.tl.notify("注文； " + self.menu_table[int(menu_number)]["name"])
                         print(self.menu_table[int(menu_number)])
                         table = self.menu_table[int(menu_number)]
                         self.add_total(name=table["name"], value=table["value"])
+                        time.sleep(1)                        
+                        menu_number_old = menu_number
                     
                 # cl.send(response)
 # #                 # 1秒ごとにページを作成しなおす
-                time.sleep(1)
+                time.sleep(0.1)
                 cl.close()
 
                 

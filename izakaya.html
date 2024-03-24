@@ -44,25 +44,48 @@
     </style>
 </head>
 <body>
+
+    
+    <center><h2>Ryosuke's Holidays Pub </h2>
+    <img src="purin.jpg" alt="0"> 
+    </center>
     <div class="container">
+ 
         <div class="menu-item">
+          
          <!-- page.py内で追加される -->
 
-                        <div>
-                            <button class="btn order-btn" onclick="confirmOrder(order_number=-1)">会計する</button>
-                            <!-- <button class="btn checkout-btn">会計する</button> -->
-                        </div>  
+
     </div>
+    <div>
+        <button class="btn order-btn" onclick="confirmOrder(order_number=-1)">会計する</button>
+        <!-- <button class="btn checkout-btn">会計する</button> -->
+    </div>  
     <script>
         function confirmOrder(order_number) {
         
             if (order_number == -1) {
-                sendRequest(-1)
-                return
-            }
+                var confirmed = confirm("会計しても良いですか？");
+                if (confirmed) {
+                    sendRequest(-1)
+                    // 1秒後に指定の処理を実行する
+                    setTimeout(function() {
+                        // ここに一定時間後に実行したい処理を記述する
+                        window.location.reload();
+                    }, 1000); // 1000ミリ秒 = 1秒
+                
+                }
+                return;
+            }   
             var confirmed = confirm("本当に注文しますか？");
             if (confirmed) {
                 sendRequest(order_number)
+                // 1秒後に指定の処理を実行する
+                setTimeout(function() {
+                        // ここに一定時間後に実行したい処理を記述する
+                        window.location.reload();
+                    }, 1000); // 1000ミリ秒 = 1秒
+                // window.location.reload();
                 var a = 1;
             } 
             else {
